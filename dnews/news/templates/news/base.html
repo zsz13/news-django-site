@@ -18,15 +18,16 @@
         <li class="logo"><a href="{% url 'home' %}"><div class="logo"></div></a></li>
         {% show_categories cat_selected=cat_selected %}
         <li><a href="{% url 'login' %}">Войти</a></li>
+        <li><a href="{% url 'add-post' %}">Добавить статью</a></li>
     </ul>
     <div class="currency-rates">
-        <p>$  {{ dataUSD }}</p>
-        <p>€  {{ dataEUR }}</p>
-        <p>₽  {{ dataRUB }}</p>
+        <p>$  {{ data_usd }}</p>
+        <p>€  {{ data_eur }}</p>
+        <p>₽  {{ data_rub }}</p>
     </div>
     <div class="weather-widget">
         <h3>Погода в {{ city }}</h3>
-        <p>Температура: {{ weather_data.main.temp }}°C</p>
+                <p>Температура: {{ weather_data.main.temp}}°C</p>
     </div>
 </div>
 {% endblock mainmenu %}
@@ -41,7 +42,7 @@
 			<li class="last"><a href="{% url m.url_name %}">{{m.title}}</a></li>
 	{% endif %}
                 {% endfor %}
-                                <li><a href="#"><img class="instagram-icon" src="{% static 'news/images/instagram_logo.png' %}" width="30px" height="30px"></a>Наш Instagram</li>
+                <li><a href="#"><img class="instagram-icon" src="{% static 'news/images/instagram_logo.png' %}" width="30px" height="30px"></a>Наш Instagram</li>
                 <li><a href="#"><img class="telegram-icon" src="{% static 'news/images/telegram_logo.png' %}" width="30px" height="30px"></a>Наш Telegram</li>
                 <li><a href="https://github.com/zsz13"><img class="github-icon" src="{% static 'news/images/github_logo.png' %}" width="30px" height="30px"></a>GitHub автора</li>
     </ul>

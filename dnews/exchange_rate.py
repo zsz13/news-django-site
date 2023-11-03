@@ -2,12 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import time
-
-from dnews.constants import constants
+import json
 
 
 # Функция для получения курса валюты
-
 
 def get_currency_rate(url):
     # Получаем содержимое страницы
@@ -60,13 +58,18 @@ if __name__ == "__main__":
     # Задержка в 15 минут (900 секунд)
     # time.sleep(900)
 
+    data = {}
+
     if current_usd_rate is not None:
-        constants['usd_rate'] = current_usd_rate
+        data['usd_rate'] = current_usd_rate
 
     if current_eur_rate is not None:
-        constants['eur_rate'] = current_eur_rate
+        data['eur_rate'] = current_eur_rate
 
     if current_rub_rate is not None:
-        constants['rub_rate'] = current_rub_rate
+        data['rub_rate'] = current_rub_rate
 
-    print(constants)
+    with open("currency_rate_weather.json", "w") as json_file:
+        json.dump(data, json_file)
+
+    print(data)

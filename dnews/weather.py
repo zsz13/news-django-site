@@ -1,8 +1,6 @@
 import time
-
 import requests
-
-from dnews.constants import constants
+import json
 
 api_key = '1cbb43ff0362f2c578b05fe571c1ea68'
 city = 'Almaty'
@@ -30,9 +28,9 @@ if __name__ == "__main__":
     weather_data = get_weather(api_key, city)
     if weather_data:
         print(weather_data)
-        time.sleep(900)
-    if weather_data:
-        constants['weather_data'] = weather_data
+        # time.sleep(900)
+        with open("weather_data.json", "w") as json_file:
+            json.dump(weather_data, json_file)
 
     # weather_data = get_weather(api_key, city)
     # print(weather_data)

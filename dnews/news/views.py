@@ -1,54 +1,89 @@
+import os.path
 from django.http import HttpResponse, HttpResponseNotFound, Http404
-from django.shortcuts import render, get_object_or_404
-from django.views.generic import ListView
-from exchange_rate import get_currency_rate
-from weather import get_weather
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.generic import ListView, DetailView, CreateView
+from .forms import *
 from .models import *
-from dnews.constants import constants
-
-# usd_url = "https://www.google.com/search?q=курс+доллара+к+тенге"
-# current_usd_rate = get_currency_rate(usd_url)
-# eur_url = "https://www.google.com/search?q=курс+евро+к+тенге"
-# current_eur_rate = get_currency_rate(eur_url)
-# rub_url = "https://www.google.com/search?q=курс+рубля+к+тенге"
-# current_rub_rate = get_currency_rate(rub_url)
-# api_key = '1cbb43ff0362f2c578b05fe571c1ea68'
-# city = 'Almaty'
-# weather_data = get_weather(api_key, city)
+import json
 
 menu = [{'title': "О сайте", 'url_name': 'about'},
         {'title': "Обратная связь", 'url_name': 'contact'},
         ]
+file_path = os.path.join('currency_rate_weather.json')
 
 
-def index(request):
-    # global usd_url
-    # global current_usd_rate
-    # global eur_url
-    # global current_eur_rate
-    # global rub_url
-    # global current_rub_rate
-    # global api_key
-    # global city
-    # global weather_data
-    posts = News.objects.all()
-    context = {
-        'posts': posts,
-        'title': 'Главная страница',
-        'cat_selected': 0,
-        'dataUSD': constants['usd_rate'],
-        'dataEUR': constants['eur_rate'],
-        'dataRUB': constants['rub_rate'],
-        'weather_data': constants['weather_data'],
-        # 'dataUSD': current_usd_rate,
-        # 'dataEUR': current_eur_rate,
-        # 'dataRUB': current_rub_rate,
-        # 'weather_data': weather_data,
-        'city': 'Алматы',
-        'menu': menu,
-    }
+class NewsHome(ListView):
+    model = News
+    template_name = 'news/index.html'
+    context_object_name = 'posts'
 
-    return render(request, 'news/index.html', context=context)
+    def get_context_data(self, *, object_list=None, **kwargs):
+        data_usd, data_eur, data_rub, weather = read_json(file_path)
+        context = super().get_context_data(**kwargs)
+        context['menu'] = menu
+        context['title'] = 'Главная страница'
+        context['data_usd'] = data_usd
+        context['data_eur'] = data_eur
+        context['data_rub'] = data_rub
+        context['weather_data'] = weather
+        context['city'] = 'Алматы'
+        return context
+
+    def get_queryset(self):
+        return News.objects.filter(is_published=True)
+
+
+def read_json(file_path):
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+        data_usd, data_eur, data_rub, weather = data['usd_rate'], data['eur_rate'], data['rub_rate'], data['weather_data']
+    return data_usd, data_eur, data_rub, weather
+
+
+# def index(request):
+#     data_usd, data_eur, data_rub, weather = read_json(file_path)
+#     posts = News.objects.all()
+#     context = {
+#         'posts': posts,
+#         'menu': menu,
+#         'title': 'Главная страница',
+#         'cat_selected': 0,
+#         'data_usd': data_usd,
+#         'data_eur': data_eur,
+#         'data_rub': data_rub,
+#         'weather_data': weather,
+#         'city': 'Алматы',
+#     }
+#
+#     return render(request, 'news/index.html', context=context)
+
+
+class AddPost(CreateView):
+    form_class = AddPostForm
+    template_name = 'news/add_post.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        data_usd, data_eur, data_rub, weather = read_json(file_path)
+        context = super().get_context_data(**kwargs)
+        context['menu'] = menu
+        context['title'] = 'Добавление поста'
+        context['data_usd'] = data_usd
+        context['data_eur'] = data_eur
+        context['data_rub'] = data_rub
+        context['weather_data'] = weather
+        context['city'] = 'Алматы'
+        return context
+# def add_post(request):
+#     data_usd, data_eur, data_rub, weather = read_json(file_path)
+#     if request.method == 'POST':
+#         form = AddPostForm(request.POST, request.FILES)
+#         if form.is_valid():
+#             print(form.cleaned_data)
+#             form.save()
+#             return redirect('home')
+#     else:
+#         form = AddPostForm()
+#     return render(request, 'news/add_post.html', {'form': form, 'menu': menu, 'title': 'Добавление поста', 'data_usd': data_usd, 'data_eur': data_eur, 'data_rub': data_rub, 'weather_data': weather, 'city': 'Алматы'})
 
 
 def politics(request):
@@ -83,33 +118,43 @@ def login(request):
     return HttpResponse("Авторизация")
 
 
-def show_post(request, post_slug):
-    global usd_url
-    global current_usd_rate
-    global eur_url
-    global current_eur_rate
-    global rub_url
-    global current_rub_rate
-    global api_key
-    global city
-    global weather_data
-    post = get_object_or_404(News, slug=post_slug)
-    context = {
-        'post': post,
-        'menu': menu,
-        'title': post.title,
-        'cat_selected': post.cat_id,
-        'dataUSD': current_usd_rate,
-        'dataEUR': current_eur_rate,
-        'dataRUB': current_rub_rate,
-        'weather_data': weather_data,
-        'city': 'Алматы',
-    }
-    return render(request, 'news/post.html', context=context)
+class ShowPost(DetailView):
+    model = News
+    template_name = 'news/post.html'
+    slug_url_kwarg = 'post_slug'
+    context_object_name = 'post'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        data_usd, data_eur, data_rub, weather = read_json(file_path)
+        context = super().get_context_data(**kwargs)
+        context['menu'] = menu
+        context['title'] = context['post']
+        context['data_usd'] = data_usd
+        context['data_eur'] = data_eur
+        context['data_rub'] = data_rub
+        context['weather_data'] = weather
+        context['city'] = 'Алматы'
+        return context
+# def show_post(request, post_slug):
+#     post = get_object_or_404(News, slug=post_slug)
+#     data_usd, data_eur, data_rub, weather = read_json(file_path)
+#     context = {
+#         'post': post,
+#         'menu': menu,
+#         'title': post.title,
+#         'cat_selected': post.cat_id,
+#         'data_usd': data_usd,
+#         'data_eur': data_eur,
+#         'data_rub': data_rub,
+#         'weather_data': weather,
+#         'city': 'Алматы',
+#     }
+#     return render(request, 'news/post.html', context=context)
 
 
 def about(request):
-    return render(request, 'news/about.html', {'title': 'О сайте'})
+    data_usd, data_eur, data_rub, weather = read_json(file_path)
+    return render(request, 'news/about.html', {'title': 'О сайте', 'data_usd': data_usd, 'data_eur': data_eur, 'data_rub': data_rub, 'weather_data': weather, 'city': 'Алматы'})
 
 
 def contact(request):
@@ -122,32 +167,45 @@ def categories(request, categoryid):
     return HttpResponse(f"<h1>Статьи по категориям</h1><p>{categoryid}</p>")
 
 
-def show_category(request, cat_id):
-    global usd_url
-    global current_usd_rate
-    global eur_url
-    global current_eur_rate
-    global rub_url
-    global current_rub_rate
-    global api_key
-    global city
-    global weather_data
-    posts = News.objects.filter(cat_id=cat_id)
-    if len(posts) == 0:
-        raise Http404()
-    context = {
-        'posts': posts,
-        'title': 'Отображение по рубрикам',
-        'cat_selected': cat_id,
-        'dataUSD': current_usd_rate,
-        'dataEUR': current_eur_rate,
-        'dataRUB': current_rub_rate,
-        'weather_data': weather_data,
-        'city': 'Алматы',
-        'menu': menu
-    }
-    return render(request, 'news/index.html', context=context)
+class NewsCategory(ListView):
+    model = News
+    template_name = 'news/index.html'
+    context_object_name = 'posts'
+    allow_empty = False
+
+    def get_queryset(self):
+        return News.objects.filter(cat__slug=self.kwargs['cat_slug'], is_published=True)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        data_usd, data_eur, data_rub, weather = read_json(file_path)
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Категория - ' + str(context['posts'][0].cat)
+        context['menu'] = menu
+        context['cat_selected'] = context['posts'][0].cat_id
+        context['data_usd'] = data_usd
+        context['data_eur'] = data_eur
+        context['data_rub'] = data_rub
+        context['weather_data'] = weather
+        context['city'] = 'Алматы'
+        return context
+# def show_category(request, cat_id):
+#     posts = News.objects.filter(cat_id=cat_id)
+#     data_usd, data_eur, data_rub, weather = read_json(file_path)
+#     if len(posts) == 0:
+#         raise Http404()
+#     context = {
+#         'posts': posts,
+#         'menu': menu,
+#         'title': 'Отображение по рубрикам',
+#         'cat_selected': cat_id,
+#         'data_usd': data_usd,
+#         'data_eur': data_eur,
+#         'data_rub': data_rub,
+#         'weather_data': weather,
+#         'city': 'Алматы',
+#     }
+#     return render(request, 'news/index.html', context=context)
 
 
-def pageNotFound(request, exception):
+def page_not_found(request, exception):
     return HttpResponseNotFound('<h1>Страница не найдена</h1>')
